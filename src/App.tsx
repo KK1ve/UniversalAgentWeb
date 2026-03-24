@@ -21,7 +21,7 @@ import {
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { cn } from './lib/utils';
 import { sessionApi, managementApi, agentApi } from './services/api';
-import { Session, Run, Message, Agent, Skill } from './types';
+import { Session, Run, Message, Agent, Skill, ModelChannelItem } from './types';
 import { format } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
@@ -320,6 +320,25 @@ const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onC
   const [modelId, setModelId] = useState<number | ''>('');
   const [isDefault, setIsDefault] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [channels, setChannels] = useState<ModelChannelItem[]>([]);
+  const [loadingChannels, setLoadingChannels] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchChannels = async () => {
+        setLoadingChannels(true);
+        try {
+          const data = await managementApi.listModelChannels(100, 0);
+          setChannels(data.items);
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setLoadingChannels(false);
+        }
+      };
+      fetchChannels();
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -358,15 +377,27 @@ const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onC
             />
           </div>
           <div className="space-y-2">
-            <label className="text-xs text-[#888]">Model ID</label>
-            <input
-              type="number"
+            <label className="text-xs text-[#888]">Model</label>
+            <select
               value={modelId}
               onChange={e => setModelId(e.target.value === '' ? '' : Number(e.target.value))}
               required
-              className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none"
-              placeholder="e.g. 1"
-            />
+              disabled={loadingChannels}
+              className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none disabled:opacity-50"
+            >
+              <option value="" disabled>
+                {loadingChannels ? 'Loading models...' : 'Select a model...'}
+              </option>
+              {channels.map(channel => (
+                <optgroup key={channel.id} label={`${channel.name} (${channel.type})`}>
+                  {channel.models.map(model => (
+                    <option key={model.id} value={model.id}>
+                      {model.display_name} ({model.context_length} ctx)
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
           </div>
           <div className="flex items-center gap-2">
             <input

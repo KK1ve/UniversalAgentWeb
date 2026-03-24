@@ -62,3 +62,29 @@ export interface UploadResponse {
   filename: string;
   size: number;
 }
+
+export interface ModelItem {
+  id: number;
+  model_id: string;
+  display_name: string;
+  provider_type: string;
+  context_length: number;
+  max_tokens: number;
+  status: number;
+}
+
+export interface ModelChannelItem {
+  id: number;
+  name: string;
+  type: string;
+  base_url: string;
+  status: number;
+  models: ModelItem[];
+}
+
+export interface ModelChannelListResponse {
+  items: ModelChannelItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}

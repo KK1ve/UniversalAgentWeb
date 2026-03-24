@@ -65,6 +65,10 @@ export const sessionApi = {
 };
 
 export const managementApi = {
+  listModelChannels: async (limit = 100, offset = 0) => {
+    const { data } = await api.get('/api/v1/management/model-channels', { params: { limit, offset } });
+    return data;
+  },
   listAgents: async () => {
     const { data } = await api.get('/api/v1/management/agents');
     return data;
