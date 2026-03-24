@@ -1,0 +1,5 @@
+{
+  "name": "UniversalAgent Dashboard",
+  "description": "A multi-tenant AI Agent platform for managing sessions, agents, and skills with real-time execution streaming.",
+  "requestFramePermissions": []
+}
