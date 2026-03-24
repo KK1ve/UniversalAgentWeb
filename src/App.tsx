@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getBaseUrl } from './services/api';
 import { 
   MessageSquare, 
   Settings, 
@@ -28,11 +29,12 @@ import { useRunStream } from './hooks/useRunStream';
 
 // --- Components ---
 
-const Sidebar = ({ sessions, currentSessionId, onNewSession, onDeleteSession }: { 
+const Sidebar = ({ sessions, currentSessionId, onNewSession, onDeleteSession, onOpenSettings }: { 
   sessions: Session[], 
   currentSessionId?: string,
   onNewSession: () => void,
-  onDeleteSession: (id: string) => void
+  onDeleteSession: (id: string) => void,
+  onOpenSettings: () => void
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -103,6 +105,12 @@ const Sidebar = ({ sessions, currentSessionId, onNewSession, onDeleteSession }: 
         >
           <Wrench size={14} /> SKILLS
         </Link>
+        <button 
+          onClick={onOpenSettings}
+          className="w-full flex items-center gap-2 p-2 rounded text-xs font-mono text-[#888] hover:bg-[#1A1A1A] transition-colors mt-2"
+        >
+          <Settings size={14} /> SETTINGS
+        </button>
         <button 
           onClick={() => {
             localStorage.removeItem('token');
@@ -447,9 +455,48 @@ const ManagementSkills = () => {
   );
 };
 
-const ForbiddenPage = () => {
+const SettingsModal = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+  const [url, setUrl] = useState(getBaseUrl());
+  
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    localStorage.setItem('api_base_url', url);
+    window.location.reload();
+  };
+
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 font-mono">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#141414] border border-[#2A2A2A] p-6 rounded-lg w-full max-w-md space-y-4 font-mono">
+        <h2 className="text-lg font-bold text-white">SETTINGS</h2>
+        <div className="space-y-2">
+          <label className="text-xs text-[#888]">Backend API URL</label>
+          <input 
+            type="text" 
+            value={url}
+            onChange={e => setUrl(e.target.value)}
+            className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none"
+            placeholder="http://localhost:8000"
+          />
+        </div>
+        <div className="flex justify-end gap-2 pt-4">
+          <button onClick={onClose} className="px-4 py-2 text-xs text-[#888] hover:text-white transition-colors">CANCEL</button>
+          <button onClick={handleSave} className="px-4 py-2 bg-[#E4E3E0] text-[#141414] text-xs font-bold rounded hover:bg-white transition-colors">SAVE & RELOAD</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ForbiddenPage = ({ onOpenSettings }: { onOpenSettings: () => void }) => {
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 font-mono relative">
+      <button 
+        onClick={onOpenSettings}
+        className="absolute top-4 right-4 flex items-center gap-2 p-2 rounded text-xs font-mono text-[#888] hover:text-white hover:bg-[#1A1A1A] transition-colors"
+      >
+        <Settings size={14} /> SETTINGS
+      </button>
       <div className="w-full max-w-md space-y-8 p-8 border border-red-900/50 bg-[#141414] rounded-lg shadow-2xl text-center">
         <div className="space-y-2">
           <div className="text-4xl font-bold tracking-tighter text-red-500">403</div>
@@ -470,6 +517,7 @@ export default function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const fetchSessions = async () => {
     try {
@@ -516,22 +564,27 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-      <Router>
-        <Routes>
-          <Route path="*" element={<ForbiddenPage />} />
-        </Routes>
-      </Router>
+      <>
+        <Router>
+          <Routes>
+            <Route path="*" element={<ForbiddenPage onOpenSettings={() => setIsSettingsOpen(true)} />} />
+          </Routes>
+        </Router>
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      </>
     );
   }
 
   return (
-    <Router>
-      <div className="flex h-screen bg-[#0A0A0A] text-[#E4E3E0]">
-        <Sidebar 
-          sessions={sessions} 
-          onNewSession={handleNewSession}
-          onDeleteSession={handleDeleteSession}
-        />
+    <>
+      <Router>
+        <div className="flex h-screen bg-[#0A0A0A] text-[#E4E3E0]">
+          <Sidebar 
+            sessions={sessions} 
+            onNewSession={handleNewSession}
+            onDeleteSession={handleDeleteSession}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
         
         <main className="flex-1 flex flex-col overflow-hidden">
           <Routes>
@@ -561,5 +614,7 @@ export default function App() {
         </main>
       </div>
     </Router>
+    <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+    </>
   );
 }

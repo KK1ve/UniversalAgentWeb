@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getBaseUrl } from '../services/api';
 
 export type StreamEvent = 
   | { type: 'token'; data: string }
@@ -29,7 +30,7 @@ export function useRunStream(sessionId: string | null, runId: string | null) {
 
     const stream = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/sessions/${sessionId}/runs/${runId}/stream`, {
+        const response = await fetch(`${getBaseUrl()}/api/v1/sessions/${sessionId}/runs/${runId}/stream`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'text/event-stream'

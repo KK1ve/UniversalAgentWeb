@@ -1,14 +1,15 @@
 import axios from 'axios';
 
-const BASE_URL = 'http://localhost:8000';
+export const getBaseUrl = () => localStorage.getItem('api_base_url') || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const getAuthToken = () => localStorage.getItem('token');
 
 const api = axios.create({
-  baseURL: BASE_URL,
+  baseURL: getBaseUrl(),
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -94,5 +95,5 @@ export const managementApi = {
 };
 
 export const getStreamUrl = (sessionId: string, runId: string) => {
-  return `${BASE_URL}/api/v1/sessions/${sessionId}/runs/${runId}/stream`;
+  return `${getBaseUrl()}/api/v1/sessions/${sessionId}/runs/${runId}/stream`;
 };
