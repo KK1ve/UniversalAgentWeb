@@ -315,9 +315,85 @@ const ChatView = () => {
   );
 };
 
+const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) => {
+  const [name, setName] = useState('');
+  const [modelId, setModelId] = useState<number | ''>('');
+  const [isDefault, setIsDefault] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || modelId === '') return;
+    setIsSubmitting(true);
+    try {
+      await managementApi.createAgent({ name, model_id: Number(modelId), is_default: isDefault });
+      onSuccess();
+      onClose();
+      setName('');
+      setModelId('');
+      setIsDefault(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#141414] border border-[#2A2A2A] p-6 rounded-lg w-full max-w-md space-y-4 font-mono">
+        <h2 className="text-lg font-bold text-white">CREATE_AGENT</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs text-[#888]">Agent Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              required
+              className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none"
+              placeholder="e.g. GPT-4 Agent"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs text-[#888]">Model ID</label>
+            <input
+              type="number"
+              value={modelId}
+              onChange={e => setModelId(e.target.value === '' ? '' : Number(e.target.value))}
+              required
+              className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none"
+              placeholder="e.g. 1"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isDefault"
+              checked={isDefault}
+              onChange={e => setIsDefault(e.target.checked)}
+              className="bg-[#1A1A1A] border-[#333] rounded accent-[#E4E3E0]"
+            />
+            <label htmlFor="isDefault" className="text-xs text-[#888] cursor-pointer">Set as Default</label>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-xs text-[#888] hover:text-white transition-colors">CANCEL</button>
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-[#E4E3E0] text-[#141414] text-xs font-bold rounded hover:bg-white transition-colors disabled:opacity-50">
+              {isSubmitting ? 'CREATING...' : 'CREATE'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const ManagementAgents = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const fetchAgents = async () => {
     try {
@@ -348,7 +424,10 @@ const ManagementAgents = () => {
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="flex items-center justify-between border-b border-[#2A2A2A] pb-4">
           <h1 className="text-xl font-mono font-bold tracking-tighter">AGENT_MANAGEMENT</h1>
-          <button className="px-4 py-2 bg-[#E4E3E0] text-[#141414] text-xs font-bold rounded hover:bg-white transition-colors">
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 bg-[#E4E3E0] text-[#141414] text-xs font-bold rounded hover:bg-white transition-colors"
+          >
             CREATE_AGENT
           </button>
         </div>
@@ -385,6 +464,11 @@ const ManagementAgents = () => {
           </div>
         )}
       </div>
+      <CreateAgentModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onSuccess={fetchAgents} 
+      />
     </div>
   );
 };
