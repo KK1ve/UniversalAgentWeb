@@ -1,19 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getBaseUrl } from '../services/api';
 
+export interface ToolCallEvent {
+  tool_name: string;
+  args: any;
+  tool_call_id: string;
+}
+
+export interface ToolResultEvent {
+  tool_name: string;
+  tool_call_id: string;
+  content: string;
+}
+
 export type StreamEvent = 
   | { type: 'token'; data: string }
+  | { type: 'tool_call'; data: ToolCallEvent }
+  | { type: 'tool_result'; data: ToolResultEvent }
   | { type: 'done'; data: string }
   | { type: 'error'; data: string };
 
 export function useRunStream(sessionId: string | null, runId: string | null) {
   const [content, setContent] = useState('');
+  const [toolCalls, setToolCalls] = useState<ToolCallEvent[]>([]);
+  const [toolResults, setToolResults] = useState<ToolResultEvent[]>([]);
   const [status, setStatus] = useState<'idle' | 'streaming' | 'completed' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!sessionId || !runId) {
       setContent('');
+      setToolCalls([]);
+      setToolResults([]);
       setStatus('idle');
       return;
     }
@@ -27,6 +45,8 @@ export function useRunStream(sessionId: string | null, runId: string | null) {
     let isCancelled = false;
     setStatus('streaming');
     setContent('');
+    setToolCalls([]);
+    setToolResults([]);
 
     const stream = async () => {
       try {
@@ -59,6 +79,26 @@ export function useRunStream(sessionId: string | null, runId: string | null) {
                 const event: StreamEvent = JSON.parse(line.slice(6));
                 if (event.type === 'token') {
                   setContent(prev => prev + event.data);
+                } else if (event.type === 'tool_call') {
+                  setToolCalls(prev => {
+                    const existing = prev.find(tc => tc.tool_call_id === event.data.tool_call_id);
+                    if (existing) {
+                      return prev.map(tc => {
+                        if (tc.tool_call_id === event.data.tool_call_id) {
+                          // If args is an object, we just replace it (assuming it's a complete event)
+                          if (typeof event.data.args === 'object') {
+                            return { ...tc, args: event.data.args };
+                          }
+                          // If it's a string, we append it
+                          return { ...tc, args: (tc.args || '') + (event.data.args || '') };
+                        }
+                        return tc;
+                      });
+                    }
+                    return [...prev, event.data];
+                  });
+                } else if (event.type === 'tool_result') {
+                  setToolResults(prev => [...prev, event.data]);
                 } else if (event.type === 'done') {
                   setContent(event.data);
                   setStatus('completed');
@@ -87,5 +127,5 @@ export function useRunStream(sessionId: string | null, runId: string | null) {
     };
   }, [sessionId, runId]);
 
-  return { content, status, error };
+  return { content, toolCalls, toolResults, status, error };
 }

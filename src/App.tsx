@@ -157,7 +157,7 @@ const MessageItem = ({ message }: { message: Message }) => {
                     <Terminal size={10} /> TOOL_CALL: {tc.name}
                   </div>
                   <pre className="text-[10px] text-[#888] overflow-x-auto">
-                    {JSON.stringify(tc.args, null, 2)}
+                    {typeof tc.args === 'string' ? (tc.args || '{}') : JSON.stringify(tc.args, null, 2)}
                   </pre>
                 </div>
               ))}
@@ -178,7 +178,7 @@ const ChatView = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
-  const { content: streamingContent, status: streamStatus } = useRunStream(sessionId || null, activeRunId);
+  const { content: streamingContent, toolCalls: streamingToolCalls, toolResults: streamingToolResults, status: streamStatus } = useRunStream(sessionId || null, activeRunId);
 
   const fetchRuns = async () => {
     if (!sessionId) return;
@@ -256,9 +256,37 @@ const ChatView = () => {
                 <div className="flex items-center gap-2 text-[10px] text-[#666] uppercase tracking-tighter">
                   assistant • streaming...
                 </div>
-                <div className="prose prose-invert prose-xs max-w-none">
-                  <ReactMarkdown>{streamingContent}</ReactMarkdown>
-                </div>
+                {streamingContent && (
+                  <div className="prose prose-invert prose-xs max-w-none">
+                    <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                  </div>
+                )}
+                
+                {streamingToolCalls.map((tc, idx) => {
+                  const result = streamingToolResults.find(tr => tr.tool_call_id === tc.tool_call_id);
+                  return (
+                    <div key={idx} className="mt-4 space-y-2">
+                      <div className="p-3 bg-black border border-[#333] rounded">
+                        <div className="flex items-center gap-2 text-[10px] text-blue-400 font-bold mb-2">
+                          <Terminal size={10} /> TOOL_CALL: {tc.tool_name}
+                        </div>
+                        <pre className="text-[10px] text-[#888] overflow-x-auto">
+                          {typeof tc.args === 'string' ? (tc.args || '{}') : JSON.stringify(tc.args, null, 2)}
+                        </pre>
+                      </div>
+                      {result && (
+                        <div className="p-3 bg-[#0F0F0F] border border-[#222] rounded text-[#666]">
+                          <div className="flex items-center gap-2 text-[10px] text-green-400 font-bold mb-2">
+                            <Terminal size={10} /> TOOL_RESULT: {result.tool_name}
+                          </div>
+                          <pre className="text-[10px] overflow-x-auto whitespace-pre-wrap">
+                            {result.content}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
