@@ -73,11 +73,11 @@ export const managementApi = {
     const { data } = await api.get('/api/v1/management/agents');
     return data;
   },
-  createAgent: async (agent: { name: string; model_id: number; is_default?: boolean }) => {
+  createAgent: async (agent: { name: string; model_id: string; is_default?: boolean }) => {
     const { data } = await api.post('/api/v1/management/agents', agent);
     return data;
   },
-  updateAgent: async (agentId: string, agent: Partial<{ name: string; model_id: number; is_default: boolean }>) => {
+  updateAgent: async (agentId: string, agent: Partial<{ name: string; model_id: string; is_default: boolean }>) => {
     const { data } = await api.put(`/api/v1/management/agents/${agentId}`, agent);
     return data;
   },

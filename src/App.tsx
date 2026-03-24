@@ -317,7 +317,7 @@ const ChatView = () => {
 
 const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) => {
   const [name, setName] = useState('');
-  const [modelId, setModelId] = useState<number | ''>('');
+  const [modelId, setModelId] = useState<string>('');
   const [isDefault, setIsDefault] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [channels, setChannels] = useState<ModelChannelItem[]>([]);
@@ -344,10 +344,10 @@ const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onC
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || modelId === '') return;
+    if (!name || !modelId) return;
     setIsSubmitting(true);
     try {
-      await managementApi.createAgent({ name, model_id: Number(modelId), is_default: isDefault });
+      await managementApi.createAgent({ name, model_id: modelId, is_default: isDefault });
       onSuccess();
       onClose();
       setName('');
@@ -380,7 +380,7 @@ const CreateAgentModal = ({ isOpen, onClose, onSuccess }: { isOpen: boolean, onC
             <label className="text-xs text-[#888]">Model</label>
             <select
               value={modelId}
-              onChange={e => setModelId(e.target.value === '' ? '' : Number(e.target.value))}
+              onChange={e => setModelId(e.target.value)}
               required
               disabled={loadingChannels}
               className="w-full bg-[#1A1A1A] border border-[#333] rounded p-2 text-xs text-white focus:border-[#666] focus:outline-none disabled:opacity-50"
