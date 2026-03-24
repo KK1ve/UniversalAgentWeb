@@ -64,7 +64,7 @@ export interface UploadResponse {
 }
 
 export interface ModelItem {
-  id: number;
+  id: string;
   model_id: string;
   display_name: string;
   provider_type: string;
@@ -74,7 +74,7 @@ export interface ModelItem {
 }
 
 export interface ModelChannelItem {
-  id: number;
+  id: string;
   name: string;
   type: string;
   base_url: string;
